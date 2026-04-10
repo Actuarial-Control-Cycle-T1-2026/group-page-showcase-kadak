@@ -1,6 +1,5 @@
 # =============================================================
 # Business Interruption Pricing Model
-# Adapted from workers_comp_pricing_model.r
 # =============================================================
 
 library(readxl)
