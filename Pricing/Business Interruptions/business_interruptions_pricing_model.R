@@ -14,7 +14,7 @@ library(forecast)
 set.seed(123)
 
 # =============================
-# Configuration
+# Values
 # =============================
 expense_ratio <- 0.3
 profit_ratio  <- 0.07
@@ -25,9 +25,7 @@ exposure_assumption <- 1
 stress_factor_freq <- 1.3
 stress_factor_sev  <- 1.2
 
-# =============================
-# Helpers
-# =============================
+
 get_beta <- function(coefs, var, level = NULL) {
   if (is.null(level)) {
     if (var %in% names(coefs)) return(unname(coefs[[var]]))
@@ -200,15 +198,12 @@ sev_coef <- coef(gamma_sev)
 sev_intercept <- unname(sev_coef[1])
 baseline_severity_raw <- exp(sev_intercept)
 
-# Gamma parameters used in your BI Monte Carlo
 sev_shape <- 1 / summary(gamma_sev)$dispersion
 sev_scale <- mean(bi_sev_clean$claim_amount, na.rm = TRUE) / sev_shape
 
-# Policy-level severity prediction using frequency dataset
 sev_hat_policy_raw <- predict(gamma_sev, newdata = bi_freq_model, type = "response")
 pure_premium_policy_raw <- lambda_hat * sev_hat_policy_raw
 
-# Anchor so total expected loss aligns to historical total loss
 portfolio_pure_premium_raw <- sum(pure_premium_policy_raw, na.rm = TRUE)
 
 severity_anchor_factor <- historical_total_loss / portfolio_pure_premium_raw
@@ -425,16 +420,12 @@ library(here)
 
 econ_raw <- read_excel(here("srcsc-2026-interest-and-inflation.xlsx"), skip = 2)
 
-# Modify the function to accept a dataset
-
 extract_inflation_forecast <- function(data, horizon = 10) {
   
-  # Remove missing inflation values
   infl <- na.omit(data$Inflation)
   
   ts_infl <- ts(infl, frequency = 1)
   
-  # Holt-Winters without seasonality (annual data)
   hw_fit <- HoltWinters(ts_infl, gamma = FALSE)
   
   fc <- forecast::forecast(hw_fit, h = horizon)
@@ -450,8 +441,6 @@ inflation_projection <- extract_inflation_forecast(econ_raw, 10)
 
 
 # Long-term: 10-year projection using inflation + discounting
-
-#econ_raw <- read_excel("C:/Users/khush/OneDrive - UNSW/Desktop/ACTL4001/KADAK/srcsc-2026-interest-and-inflation.xlsx", skip = 2)
 
 rf_projection <- econ_forecast_hw(
   econ_raw,
@@ -655,16 +644,10 @@ portfolio_risk_metrics <- tibble(
 # 10) Write outputs
 # =============================
 
-# Set working directory
-#setwd("C:/Users/khush/OneDrive - UNSW/Desktop/ACTL4001/KADAK")
+output_dir <- "BI_outputs"  
 
-# Define outputs folder
-output_dir <- "BI_outputs"  # this will create ACTL4001/KADAK/outputs
-
-# Create the folder if it doesn't exist
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
-# Write CSVs to the folder using file.path()
 write.csv(baseline_premium_summary, file.path(output_dir, "bi_baseline_premium_summary.csv"), row.names = FALSE)
 write.csv(predictor_loading_table, file.path(output_dir, "bi_predictor_loading_table.csv"), row.names = FALSE)
 write.csv(portfolio_premium_summary, file.path(output_dir, "bi_portfolio_premium_summary.csv"), row.names = FALSE)
