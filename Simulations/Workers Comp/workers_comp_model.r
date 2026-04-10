@@ -1,14 +1,8 @@
-library(ggplot2)
 library(readxl)
 library(dplyr)
-library(forcats)
 library(stringr)
-library(gridExtra)
-library(scales)
-library(tidyr)
 library(MASS)
 library(pscl)
-library(copula)
 
 # Import datasets
 worker_data_freq <- read_excel("srcsc-2026-claims-workers-comp.xlsx", sheet = 1)
@@ -225,7 +219,6 @@ sev_shape <- 1 / summary(lognormal_sev)$dispersion
 sev_mean  <- mean(worker_data_sev$claim_amount)
 sev_scale <- sev_mean / sev_shape
 
-# Storage objects
 aggregate_loss <- numeric(n_sim)
 freq_sim <- numeric(n_sim)
 sev_sim  <- numeric(n_sim)
