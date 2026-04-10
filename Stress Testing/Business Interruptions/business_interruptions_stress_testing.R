@@ -1,7 +1,7 @@
 # =============================================================
-# 8. Stress Testing
+# Stress Testing
 # =============================================================
-# 8.1 Stress Levels
+# 1 Stress Levels
 freq_levels <- c(1.25,1.5,1.75,2)
 sev_levels  <- c(1.25,1.5,1.75,2)
 
@@ -16,7 +16,7 @@ safety_levels <- c(0.8,1,1.2,1.4,1.6)
 exposure_levels   <- c(1.25,1.5,1.75,2)
 inflation_levels  <- c(1,1.05,1.1,1.15,1.2,1.3,1.4,1.5)
 
-# 8.2 Stress Test Function
+# 2 Stress Test Function
 run_stress_test <- function(stress_levels, variable_name, category) {
   stress_levels <- c(1, stress_levels)
   results <- data.frame()
@@ -45,7 +45,7 @@ run_stress_test <- function(stress_levels, variable_name, category) {
   return(results)
 }
 
-# 8.3 Run Stress Tests by Category
+# 3 Run Stress Tests by Category
 core_freq_results <- run_stress_test(freq_levels, "Claim Frequency", "Core Insurance Risk")
 core_sev_results  <- run_stress_test(sev_levels, "Claim Severity", "Core Insurance Risk")
 oper_prod_results <- run_stress_test(production_levels, "Production Load", "Operational Risk")
@@ -57,7 +57,7 @@ work_safety_results <- run_stress_test(safety_levels, "Safety Compliance", "Work
 port_exposure_results <- run_stress_test(exposure_levels, "Exposure Growth", "Portfolio Risk")
 fin_inflation_results <- run_stress_test(inflation_levels, "Claims Inflation", "Financial Risk")
 
-# 8.4 Combine Stress Test Results
+# 4 Combine Stress Test Results
 stress_results_final <- rbind(
   core_freq_results, core_sev_results,
   oper_prod_results, oper_energy_results, oper_supply_results, oper_maint_results,
@@ -69,7 +69,7 @@ stress_results_final <- rbind(
 colnames(stress_results_final) <- c("Risk_Factor", "Stress_Factor", "Mean_Loss", "VaR99")
 print(stress_results_final)
 
-# 8.5 Stress Test Plot
+# 5 Stress Test Plot
 ggplot(stress_results_final,
        aes(x = Stress_Factor, y = VaR99, group = Risk_Factor, color = Risk_Factor)) +
   geom_line(linewidth = 1) +
