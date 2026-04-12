@@ -171,7 +171,7 @@ var995_cargo <- quantile(cargo_loss, 0.995)
 
 Before model fitting, comprehensive EDA was conducted to identify key risk drivers:
 
-![Actuarial Control Cycle](/group-page-showcase-kadak/Stress%20Testing/Equipment%20Failure/stress_test.png)
+![Actuarial Control Cycle](/Stress%20Testing/Equipment%20Failure/stress_test.png)
 
 **EDA Key Findings**:
 
