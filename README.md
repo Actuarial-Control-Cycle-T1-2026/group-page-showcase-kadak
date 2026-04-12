@@ -171,7 +171,7 @@ var995_cargo <- quantile(cargo_loss, 0.995)
 
 Before model fitting, comprehensive EDA was conducted to identify key risk drivers:
 
-![Actuarial Control Cycle](ACC.png)
+![Actuarial Control Cycle](stress_test.png)
 
 **EDA Key Findings**:
 
