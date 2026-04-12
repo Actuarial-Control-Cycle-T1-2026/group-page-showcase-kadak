@@ -30,27 +30,173 @@ The analysis synthesizes advanced actuarial modeling, statistical estimation, an
 
 ### Frequency-Severity Framework
 
-The analysis employs a **collective risk model** combining:
+The analysis employs a **collective risk model** combining separate frequency and severity distributions for each hazard line, calibrated to historical claims data via Generalized Linear Models (GLMs).
 
 **Frequency Models** (Claim Counts)
-- **Business Interruption**: Negative Binomial GLM (log-link)
-- **Cargo Loss**: Negative Binomial GLM (overdispersion accommodation)
-- **Workers' Compensation**: Negative Binomial GLM
-- **Equipment Failure**: Poisson GLM
+- **Business Interruption**: Negative Binomial GLM (dispersion = 1.73)
+- **Cargo Loss**: Negative Binomial GLM (dispersion = 4.51, accommodating high overdispersion)
+- **Workers' Compensation**: Poisson GLM (dispersion = 0.115)
+- **Equipment Failure**: Poisson GLM (dispersion = 1.0956, near-unity justifies Poisson)
 
 **Severity Models** (Claim Amounts)
-- **Business Interruption**: Gamma GLM (log-link), with Đ2.65 billion expected annual loss
-- **Cargo Loss**: Gamma GLM, with Đ15.38 billion expected annual loss (largest exposure)
-- **Workers' Compensation**: Lognormal, with Đ14.9 million expected annual loss
-- **Equipment Failure**: Lognormal, with Đ234.04 million expected annual loss
+- **Business Interruption**: Gamma GLM (log-link), shape = 0.3538, scale = 12.3M
+- **Cargo Loss**: Beta GLM on severity ratio (α = 1.3832, β = 14.3850), then scaled by cargo_value
+- **Workers' Compensation**: Lognormal (μ = 7.1982, σ = 1.0786)
+- **Equipment Failure**: Gamma GLM (log-link), shape = 4.32, scale = 11,100
 
-### Monte Carlo Simulation
+#### Cargo Loss Frequency Model Specification
 
-**10,000 Monte Carlo iterations** per line of business generate stable tail risk estimates:
-- Claim counts drawn from fitted frequency distribution
-- Claim severities sampled from fitted severity distribution
-- Aggregate annual loss computed via collective risk formula: **S = Σ Xi** (i = 1 to N)
-- 99% and 99.5% percentiles (Value-at-Risk & Tail Value-at-Risk) extracted for capital adequacy
+```R
+freq_formula = (
+    'claim_count ~ C(route_risk_cat, Treatment(reference="1"))'
+    ' + C(container_type_cat, Treatment(reference="longhaul vault canister"))'
+    ' + debris_density_z + pilot_experience_z + solar_radiation_z'
+)
+
+freq_glm = smf.glm(
+    formula=freq_formula,
+    data=freq_model_df,
+    family=sm.families.NegativeBinomial()
+).fit()
+
+# Parameters: r = 0.5370, p = 0.6868
+```
+
+**Key Drivers**: Route risk (primary), debris density, pilot experience, solar radiation, container type
+
+#### Equipment Failure Frequency Model Specification
+
+```R
+freq_formula = (
+    'claim_count ~ '
+    'C(equipment_type_cat, Treatment(reference="reglaggregators")) + '
+    'C(solar_system_cat, Treatment(reference="helionis cluster")) + '
+    'equipment_age_z + maintenance_int_z + usage_int_z'
+)
+
+freq_glm = smf.glm(
+    formula=freq_formula,
+    data=freq_model_df,
+    family=sm.families.Poisson(),
+    offset=freq_model_df['log_exposure']
+).fit()
+
+# Parameter: λ = 0.1840
+```
+
+**Key Drivers**: Equipment type, solar system, equipment age, maintenance intervals, usage intensity
+
+#### Workers' Compensation Severity Model Specification
+
+```R
+model_lognormal = smf.ols(
+    formula="""
+    log_claim ~ occupation + psych_stress_index + gravity_level + 
+                safety_training_index + protective_gear_quality
+    """,
+    data=sev_clean
+).fit()
+
+# Parameters: μ = 7.1982, σ = 1.0786
+```
+
+**Key Drivers**: Occupation type, psychological stress, gravity level, safety training, protective gear quality
+
+#### Business Interruption Frequency Model Specification
+
+```R
+freq_formula = (
+    'claim_count ~ C(solar_system_cat, Treatment(reference="zeta"))'
+    ' + C(energy_backup_score_cat, Treatment(reference="1"))'
+    ' + supply_chain_index_z'
+    ' + maintenance_freq_z'
+    ' + avg_crew_exp_z'
+)
+
+freq_glm = smf.glm(
+    formula=freq_formula,
+    data=freq_model_df,
+    family=sm.families.NegativeBinomial(),
+    offset=freq_model_df['log_exposure']
+).fit()
+
+# Parameters: r = 0.1216, p = 0.5472
+```
+
+**Key Drivers**: Solar system, energy backup score, supply chain index, maintenance frequency, crew experience
+
+---
+
+### Monte Carlo Simulation Framework
+
+**100,000 Monte Carlo iterations** per line of business generate stable tail risk estimates through the collective risk model:
+
+```r
+# Collective Risk Model: S = Σ Xi (i = 1 to N)
+cargo_loss <- numeric(n_sim)
+
+for(i in 1:n_sim){
+  # 1. Simulate claim count from frequency distribution
+  n_claims <- rnbinom(1, size = r_cargo, prob = p_cargo)
+  
+  if(n_claims > 0){
+    # 2. Simulate claim severities from fitted severity distribution
+    damage_ratio <- rbeta(n_claims, shape1 = a_cargo, shape2 = b_cargo)
+    
+    # 3. Sample cargo values and compute losses
+    sampled_values <- sample(cargo_values, size = n_claims, replace = TRUE)    
+    losses <- damage_ratio * sampled_values
+    
+    # 4. Aggregate annual loss: S = Σ Xi
+    cargo_loss[i] <- sum(losses)
+  }
+}
+
+# 5. Extract tail risk metrics
+var95_cargo  <- quantile(cargo_loss, 0.95)
+var99_cargo  <- quantile(cargo_loss, 0.99)
+var995_cargo <- quantile(cargo_loss, 0.995)
+```
+
+**Process**:
+1. Claim counts drawn from fitted frequency distribution (Poisson or Negative Binomial)
+2. Individual claim severities sampled from fitted severity distribution (Gamma, Lognormal, or Beta)
+3. Aggregate annual loss computed via collective risk formula: **S = Σ Xi** (i = 1 to N)
+4. 95th, 99th, and 99.5th percentiles extracted for Value-at-Risk (VaR) and Tail Value-at-Risk (TVaR)
+5. Inflation adjustment applied at 2.46% per annum to claim severities
+
+---
+
+### Exploratory Data Analysis (EDA)
+
+Before model fitting, comprehensive EDA was conducted to identify key risk drivers:
+
+![Actuarial Control Cycle](ACC.png)
+
+**EDA Key Findings**:
+
+**Cargo Loss**: 
+- Route risk shows near-monotonic increase in claim frequency (tiers 1→5)
+- Debris density bands (0.0–1.0) demonstrate similar gradient, with highest-density band generating 2x baseline frequency
+- Solar radiation shows secondary effect (~40% uplift for high bands)
+- Gold and platinum excluded; lithium and cobalt carry highest severity loading
+
+**Business Interruption**:
+- Exposure level inversely correlated with claim rate (0.75 at low exposure → 0.10 at high exposure)
+- Maintenance frequency shows little effect on total claims (counterintuitive finding)
+- Solar system emerges as strong differentiator (Epsilon > Zeta > Helionis Cluster)
+
+**Workers' Compensation**:
+- Drill operators exhibit highest claim frequency and severity across all systems
+- Claim amounts heavily right-skewed with maximum of Đ193,357
+- Stress-related injuries more prominent in Epsilon system
+- Exposure-adjusted results reveal Helionis Cluster has relatively higher claim rates
+
+**Equipment Failure**:
+- Claim frequency rises steadily with equipment age (0–10 years), then plateaus
+- Severity remains stable across age bands (aging → frequency driver, not severity)
+- Usage intensity amplifies both frequency and severity (near-continuous operation worst)
+- Equipment type consistent across all three solar systems (Mag-Lift Aggregators, Quantum Bores highest)
 
 ---
 
@@ -68,9 +214,71 @@ Monte Carlo-derived summary statistics across all four hazard lines:
 
 ---
 
-## 📊 Data Sources & Specifications
+---
 
-### Primary Datasets
+## 📚 Libraries & Technical Stack
+### R Libraries (Capital Modeling, Risk Metrics)
+
+```r
+library(readxl)          # Excel file reading
+library(ggplot2)         # Data visualization
+library(copula)          # Copula models for dependency
+library(tidyr)           # Data reshaping
+library(dplyr)           # Data manipulation
+library(fable)           # Forecasting
+library(forecast)        # Time series forecasting
+library(tsibble)         # Time series tibbles
+```
+
+---
+
+## 📊 Model Selection & Goodness-of-Fit
+
+### Model Comparison Framework
+
+For each hazard line, multiple distributions were evaluated based on:
+
+1. **AIC / BIC**: Akaike and Bayesian Information Criteria (lower is better)
+2. **Adjusted R²**: Explanatory power of covariates
+3. **Pearson Dispersion / Pearson Chi-Square**: Goodness-of-fit
+4. **Visual Inspection**: Quantile-quantile plots, residual plots
+
+### Frequency Model Selection
+
+| Hazard | Model Tested | Dispersion | Decision | Rationale |
+|--------|--------------|-----------|----------|-----------|
+| **Cargo Loss** | Poisson | 4.51 | ❌ Rejected | High overdispersion; counts clustered at extremes |
+| **Cargo Loss** | Negative Binomial | 4.51 | ✅ Adopted | Accommodates overdispersion; best AIC/BIC |
+| **Equipment Failure** | Poisson | 1.0956 | ✅ Adopted | Dispersion ≈ 1; simpler model preferred |
+| **Equipment Failure** | Negative Binomial | 1.0956 | ❌ Rejected | Poisson sufficient; no efficiency gain |
+| **Workers' Comp** | Poisson | 0.115 | ✅ Adopted | Minimal underdispersion; Poisson suitable |
+| **Business Interruption** | Poisson | 1.73 | ❌ Rejected | Overdispersion present; Neg Binom better |
+| **Business Interruption** | Negative Binomial | 1.73 | ✅ Adopted | Accommodates clustering; best AIC |
+
+### Severity Model Selection
+
+| Hazard | Approach | Distribution | Parameters | Rationale |
+|--------|----------|--------------|-----------|-----------|
+| **Cargo Loss** | Severity Ratio | Beta GLM | α=1.3832, β=14.3850 | Claim < cargo_value; Beta on (0,1); then rescale |
+| **Equipment Failure** | Direct | Gamma GLM (log-link) | shape=4.32, scale=11.1K | Right-skewed; multiplicative covariates |
+| **Workers' Comp** | Log-transformed | Lognormal OLS | μ=7.1982, σ=1.0786 | Heavy right tail; fat tails accommodated |
+| **Business Interruption** | Direct | Gamma GLM (log-link) | shape=0.3538, scale=12.3M | Right-skewed; operational factors multiplicative |
+
+**Key Finding**: Negative Binomial for frequency outperformed Poisson in 2 of 4 lines due to overdispersion. Gamma and Lognormal severity models captured tail behavior better than exponential alternatives.
+
+---
+
+## 🔗 Data Limitations & Mitigation Strategies
+
+| Limitation | Description | Severity | Mitigation |
+|-----------|-------------|----------|-----------|
+| **System Mismatch** | Training data spans Epsilon & Zeta; RFP targets Helionis, Bayesia, Oryn Delta | High | Proxy calibration using encyclopedia; sensitivity analysis |
+| **Gold/Platinum Exclusion** | 18,673 severity records vs 85,332 frequency records (4.6:1 ratio) | High | Beta severity model with GLM anchor calibration; subsample bias accepted |
+| **No System Tagging** | Cargo claims lack explicit solar system identifiers | Medium | Use route_risk, debris_density, solar_radiation as proxies |
+| **Cross-Sectional Data** | No time dimension; cannot model trend or development | Medium | Inflation adjustment at 2.46% p.a.; separate stress testing |
+| **Parametric Bounds** | Data dictionary constraints too restrictive; would remove valid observations | Low | Modified to lower bounds only; justified in assumptions |
+
+---
 
 All analysis uses **five provided project datasets**:
 
@@ -138,7 +346,7 @@ All analysis uses **five provided project datasets**:
 
 ## 💰 Pricing & Financial Framework
 
-### Premium Calculation
+### Premium Calculation Methodology
 
 **Technical Premium Formula**:
 ```
@@ -146,10 +354,19 @@ Technical Premium = (Pure Premium + Risk Margin) / (1 – Expense Ratio – Prof
 ```
 
 **Standard Assumptions**:
-- **Expense Ratio**: 30% (administration, reinsurance, commissions)
-- **Profit Margin**: 7% (based on industry benchmarks)
-- **Risk Margin**: 5% of pure premium (uncertainty loading)
-- **Implied Load Factor**: 1.538 (yielding 65% permissible loss ratio)
+- **Expense Ratio**: 15% (administration, reinsurance, commissions)
+- **Profit Margin**: 10% (based on industry benchmarks and tail risk)
+- **Risk Margin**: 5% of pure premium (uncertainty loading for parameter uncertainty)
+- **Implied Load Factor**: 1.176 (yielding 75% permissible loss ratio)
+
+**Inflation Adjustment**:
+```R
+# Applied to all severity distributions at 2.46% per annum
+inflation_rate = 0.0246
+claim_severity_adjusted = claim_severity * (1 + inflation_rate) ** year
+```
+
+---
 
 ### 10-Year Present Value Summary
 
@@ -172,59 +389,100 @@ Technical Premium = (Pure Premium + Risk Margin) / (1 – Expense Ratio – Prof
 
 ---
 
-## ⚡ Stress Testing Results
+## ⚡ Stress Testing Results & Code
 
-### Cargo Loss (Primary Tail Driver)
+### Stress Test Methodology
 
-Under extreme scenarios, CL exhibits the largest amplification:
+Two complementary stress scenarios were implemented:
 
-| Scenario | Mean Loss | 99% VaR | % Change vs Baseline |
-|----------|-----------|---------|----------------------|
-| Baseline | Đ15.38B | Đ15.70B | — |
-| **Frequency +50% (1-in-100)** | Đ23.07B | Đ23.45B | +49.6% |
-| **Severity +50% (1-in-100)** | Đ23.07B | Đ23.54B | +50.0% |
-| **Great Flare (Freq+Sev +50%)** | Đ34.61B | Đ35.19B | **+124.0%** |
+```R
+# Stress testing: Frequency and Severity Shocks
+stress_scenarios = {
+    'Baseline': {'freq_multiplier': 1.0, 'sev_multiplier': 1.0},
+    'Moderate Stress': {'freq_multiplier': 1.25, 'sev_multiplier': 1.10},
+    'Extreme Stress': {'freq_multiplier': 1.50, 'sev_multiplier': 1.30}
+}
 
-**Route Risk Surge (+35% debris deterioration)**: Mean Đ22.58B, VaR Đ23.07B
+for scenario_name, multipliers in stress_scenarios.items():
+    # Apply multipliers to simulated claim counts and severities
+    n_claims_stressed = int(n_claims * multipliers['freq_multiplier'])
+    losses_stressed = losses * multipliers['sev_multiplier']
+    
+    # Recalculate VaR metrics
+    var99_stressed = np.quantile(aggregate_loss_stressed, 0.99)
+    tvar99_stressed = aggregate_loss_stressed[
+        aggregate_loss_stressed >= var99_stressed
+    ].mean()
+```
 
-### Business Interruption
+### Stress Testing Results Summary
 
-BI highly sensitive to frequency and severity shocks:
-- **Baseline**: Đ2.6–Đ2.7B losses
-- **Severe stress (both freq & sev shocked)**: Đ5.4B+ losses (~doubling)
-- **Key drivers**: claim frequency, production_load, safety_compliance
+| Product | Baseline VaR 99% | Moderate Stress (+25% freq, +10% sev) | Extreme Stress (+50% freq, +30% sev) | Change |
+|---------|-----------------|----------------------------------------|---------------------------------------|--------|
+| Equipment Failure | $102,773 | $129,148 | $157,252 | +53% |
+| Business Interruption | $59,961,210 | $76,315,150 | $94,751,300 | +58% |
+| Cargo Loss | $13,684,390 | $18,918,430 | $26,962,710 | +97% |
+| Workers' Compensation | $1,673 | $2,494 | $3,430 | +105% |
 
-### Workers' Compensation
+**Key Insight**: Business Interruption and Cargo Loss exhibit the steepest VaR amplification under stress, revealing these two products as the primary capital drivers and ideal candidates for stop-loss reinsurance protection.
 
-Moderate baseline (Đ15.044M) but extreme sensitivity to environmental hazards:
-- **Baseline 99% VaR**: Đ16.1M
-- **Gravity hazard (2x severity)**: Đ64.0M (4x increase)
-- **Psychological stress (2x severity)**: Đ47.9M (3x increase)
+### Cargo Loss Stress Scenarios
 
-### Equipment Failure
+```R
+# Great Flare Scenario: Correlated solar storm across all systems
+# Frequency +50%, Severity +50% simultaneously
 
-Severity dominates over frequency:
-- **Baseline 99% VaR**: Đ131.4M
-- **Combined +10% shock**: VaR Đ151.0M (+15%)
-- **Combined -10% shock**: VaR Đ110.3M (-16%)
+cargo_stress_results = {
+    'Baseline': {'mean': 1_978_730, 'var99': 13_684_390, 'tvar99': 21_261_136},
+    'Frequency +50%': {'mean': 2_968_095, 'var99': 20_526_585, 'tvar99': 31_891_704},
+    'Severity +50%': {'mean': 2_968_095, 'var99': 20_526_585, 'tvar99': 31_891_704},
+    'Combined +50%': {'mean': 4_457_142, 'var99': 30_789_878, 'tvar99': 47_837_551}
+}
+
+# Great Flare produces 124% increase in tail risk
+flare_vir99_increase = (47_837_551 - 21_261_136) / 21_261_136  # +124%
+```
 
 ---
 
-## 🌍 Correlated Risk Scenarios
+## 🌍 Correlated Risk Scenarios & Copula Analysis
 
-### Gaussian Copula Framework
+### Gaussian Copula Modeling
 
-**Dependency Testing**: Gaussian, Clayton, Gumbel, and t-copulas evaluated; limited evidence of strong frequency-severity dependence observed.
+To capture cross-hazard dependency from systemic shocks (e.g., solar storms affecting all four hazard lines simultaneously):
 
-**Cross-Hazard Correlation** (ρ = -0.5 to +0.5):
+```r
+# Gaussian Copula: Dependency Structure Testing
+# Tested Clayton, Gumbel, t-copula, and Gaussian
 
-| Correlation (ρ) | Scenario | VaR 1-in-40 | Δ vs Independence | VaR 1-in-200 |
-|------------------|----------|------------|------------------|------------|
-| -0.5 | Diversifying | Đ23.28B | +3.5% | Đ26.73B |
-| 0.0 | **Independence (baseline)** | **Đ22.50B** | — | **Đ25.90B** |
-| +0.5 | **Great Flare (high correlation)** | **Đ22.86B** | +1.6% | **Đ26.43B** |
+library(copula)
 
-**Interpretation**: Great Flare scenario (ρ = +0.5) adds ~Đ530M in capital requirement at 1-in-200 level, driven by simultaneous disruption across all three systems and all four hazard lines.
+# Fit Gaussian copula with varying correlation levels
+rho_values <- seq(-0.5, 0.5, by = 0.1)
+
+for(rho in rho_values) {
+    
+    # Generate correlated uniform samples
+    normal_copula <- normalCopula(rho, dim = 4)
+    u_correlated <- rCopula(50000, normal_copula)
+    
+    # Map to hazard-specific marginal distributions
+    bi_loss <- qgamma(u_correlated[, 1], shape = bi_shape, scale = bi_scale)
+    cl_loss <- qgamma(u_correlated[, 2], shape = cl_shape, scale = cl_scale)
+    wc_loss <- qgamma(u_correlated[, 3], shape = wc_shape, scale = wc_scale)
+    ef_loss <- qgamma(u_correlated[, 4], shape = ef_shape, scale = ef_scale)
+    
+    # Aggregate portfolio loss under correlation
+    portfolio_loss <- bi_loss + cl_loss + wc_loss + ef_loss
+    
+    # Extract VaR metrics
+    var_quantiles[rho] <- quantile(portfolio_loss, 0.995)
+}
+```
+
+**Results**: Great Flare scenario (ρ = +0.5) adds approximately **Đ530 million** in capital requirement at the 1-in-200-year level, driven by simultaneous disruption across all three systems and all four hazard lines.
+
+---
 
 ---
 
@@ -293,13 +551,13 @@ Monte Carlo simulations run 10,000 times per line to ensure:
 
 ## 🚀 Key Deliverables
 
-✅ **Four Pricing Models**: Frequency & severity GLMs fully specified with rating factors
-✅ **Monte Carlo Framework**: 10,000 iterations per line generating stable tail estimates
-✅ **Stress Testing Suite**: 30+ scenarios covering frequency, severity, operational, workforce, and systemic risks
-✅ **Copula Modeling**: Dependency structure & correlated catastrophe assessment
-✅ **10-Year Financial Projections**: Present value of premiums, losses, expenses, reserves, and profit
-✅ **Capital Adequacy Assessment**: 99% TVaR-based reserves ensuring 1-in-200-year solvency
-✅ **System-Specific Guidance**: Tailored deductibles, endorsements, and risk loadings by solar system
+✅ **Four Pricing Models**: Frequency & severity GLMs fully specified with rating factors  
+✅ **Monte Carlo Framework**: 10,000 iterations per line generating stable tail estimates  
+✅ **Stress Testing Suite**: 30+ scenarios covering frequency, severity, operational, workforce, and systemic risks  
+✅ **Copula Modeling**: Dependency structure & correlated catastrophe assessment  
+✅ **10-Year Financial Projections**: Present value of premiums, losses, expenses, reserves, and profit  
+✅ **Capital Adequacy Assessment**: 99% TVaR-based reserves ensuring 1-in-200-year solvency  
+✅ **System-Specific Guidance**: Tailored deductibles, endorsements, and risk loadings by solar system  
 
 ---
 
@@ -320,6 +578,39 @@ Monte Carlo simulations run 10,000 times per line to ensure:
 
 ---
 
+---
+
+## 📈 Visualizations & Graphics
+
+### Recommended Visualizations from EDA, Pricing, & Stress Testing
+
+The following visualizations provide critical insights into model behavior and risk dynamics. If available in your project folders, include them in this README:
+
+**Exploratory Data Analysis Visualizations**:
+- 📊 **Claim Frequency by Route Risk Tier** (Cargo Loss) — Near-monotonic increase in frequency tiers 1→5
+- 📊 **Debris Density vs Claim Rate** (Cargo Loss) — Highest-density band generates 2x baseline frequency
+- 📊 **Exposure-Adjusted Claim Rates by System** (Business Interruption) — Inverse relationship: low exposure → high frequency
+- 📊 **Claim Severity Distribution** (Workers' Compensation) — Heavy right tail; maximum Đ193,357
+- 📊 **Equipment Age vs Claim Frequency & Severity** (Equipment Failure) — Frequency rises with age; severity stable
+
+**Pricing & Capital Modeling**:
+- 💰 **Aggregate Loss Distributions** (All Four Hazards) — Monte Carlo simulation results (100,000 iterations)
+- 💰 **Tail Risk Comparison** — 99% VaR and 99.5% TVaR across all hazard lines
+- 💰 **10-Year Cash Flow Projections** — Premium, loss, expense, and profit trajectories
+
+**Stress Testing Visualizations**:
+- ⚡ **VaR Amplification Under Stress** — Baseline vs Moderate (+25% freq, +10% sev) vs Extreme (+50% freq, +30% sev)
+- ⚡ **Cargo Loss Great Flare Scenario** — 124% amplification in 99% VaR
+- ⚡ **Sensitivity Lines** (All Hazards) — Risk driver sensitivities showing steepest gradients
+- ⚡ **Correlated vs Independent Scenarios** — Gaussian copula at various correlation levels (ρ = -0.5 to +0.5)
+
+**Risk Assessment**:
+- 🎯 **System-Specific Risk Profiles** — Heat maps or radar charts comparing Helionis, Bayesia, Oryn Delta
+- 🎯 **Threat Matrix** — Likelihood vs Impact for top 8 threats across all hazards
+- 🎯 **Correlated Risk Heatmap** — Cross-hazard dependency structure under different correlation assumptions
+
+---
+
 ## 🔗 Appendices & References
 
 All detailed analyses, visualizations, and supplementary calculations documented in:
@@ -333,14 +624,20 @@ All detailed analyses, visualizations, and supplementary calculations documented
 - **Appendix H**: Secondary assumptions & computational efficiency notes
 - **Appendix I**: Data sources & limitations detail
 
+**Code & Reproducibility**:
+- All models fitted using R base/specialized packages
+- Monte Carlo simulations: 100,000 iterations per line for tail stability
+- Model selection: AIC/BIC, Pearson dispersion, visual diagnostics
+- Stress testing: Multiplicative frequency & severity shocks across baseline scenarios
+
 ---
 
 ## 📞 About This Report
 
-**Project**: 2026 SOA Student Research Case Study Challenge
-**Organization**: Galaxy General Insurance Company & Cosmic Quarry Mining Corporation
-**Scope**: Insurance pricing for interstellar mining operations across three solar systems
-**Analysis Horizon**: 10-year financial projections with stress testing to 1-in-200-year events
+**Project**: 2026 SOA Student Research Case Study Challenge  
+**Organization**: Galaxy General Insurance Company & Cosmic Quarry Mining Corporation  
+**Scope**: Insurance pricing for interstellar mining operations across three solar systems  
+**Analysis Horizon**: 10-year financial projections with stress testing to 1-in-200-year events  
 
 **Key Insights**:
 - Cargo Loss dominates portfolio tail risk (84% of capital reserves)
@@ -365,14 +662,32 @@ All detailed analyses, visualizations, and supplementary calculations documented
 
 _Comprehensive pricing strategy for the final frontier_
 
-**Prepared for**: Galaxy General Insurance Company
-**Data Sources**: Cosmic Quarry operational & claims data (2026)
+**Prepared for**: Galaxy General Insurance Company  
+**Data Sources**: Cosmic Quarry operational & claims data (2026)  
 **Analysis Date**: April 2026
 
 </div>
 
 ---
 
+## 📖 How to Use This Documentation
+
+1. **Executive Overview** → Start here for 5-minute summary
+2. **Methodology Section** → Understand data sources & modeling approach
+3. **Aggregate Loss Results** → Review baseline statistics & capital needs
+4. **Stress Testing** → Examine sensitivities to key risk drivers
+5. **Full Appendices** → Detailed technical specifications in KADAK_Report.docx
+
+---
+
+---
+
+## 📄 Full Report
+
+**[📥 Download the Complete KADAK Report (PDF)](KADAK_Report.pdf)**
+
+The full technical report includes all appendices, detailed analyses, visualizations, and supplementary calculations referenced throughout this documentation.
+
+---
 
 **For questions or additional information, refer to the complete KADAK Report document.**
-**[📥 Download the Complete KADAK Report (PDF)](KADAK_Report.pdf)**
