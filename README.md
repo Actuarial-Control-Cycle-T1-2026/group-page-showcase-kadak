@@ -5,7 +5,7 @@
 
 ---
 
-## 📊 Executive Overview
+## Executive Overview
 
 This project develops a comprehensive insurance pricing strategy for **Galaxy General Insurance Company** to cover the operational risks of **Cosmic Quarry Mining Corporation** across three solar systems: **Helionis Cluster**, **Bayesia System**, and **Oryn Delta**. Four primary insurance products address material exposures: Business Interruption (BI), Cargo Loss (CL), Workers' Compensation (WC), and Equipment Failure (EF).
 
@@ -13,7 +13,7 @@ The analysis synthesizes advanced actuarial modeling, statistical estimation, an
 
 ---
 
-## 🎯 Products Developed
+## Products Developed
 
 ### Coverage Areas & Key Parameters
 
@@ -26,7 +26,7 @@ The analysis synthesizes advanced actuarial modeling, statistical estimation, an
 
 ---
 
-## 🔬 Methodology Overview
+## Methodology Overview
 
 ### Frequency-Severity Framework
 
@@ -216,7 +216,7 @@ Monte Carlo-derived summary statistics across all four hazard lines:
 
 ---
 
-## 📚 Libraries & Technical Stack
+## Libraries & Technical Stack
 ### R Libraries (Capital Modeling, Risk Metrics)
 
 ```r
@@ -232,7 +232,7 @@ library(tsibble)         # Time series tibbles
 
 ---
 
-## 📊 Model Selection & Goodness-of-Fit
+## Model Selection & Goodness-of-Fit
 
 ### Model Comparison Framework
 
@@ -268,7 +268,7 @@ For each hazard line, multiple distributions were evaluated based on:
 
 ---
 
-## 🔗 Data Limitations & Mitigation Strategies
+## Data Limitations & Mitigation Strategies
 
 | Limitation | Description | Severity | Mitigation |
 |-----------|-------------|----------|-----------|
@@ -318,7 +318,7 @@ All analysis uses **five provided project datasets**:
 
 ---
 
-## 🔍 Key Modeling Decisions & Rationale
+## Key Modeling Decisions & Rationale
 
 ### GLM Specification
 
@@ -344,7 +344,7 @@ All analysis uses **five provided project datasets**:
 
 ---
 
-## 💰 Pricing & Financial Framework
+## Pricing & Financial Framework
 
 ### Premium Calculation Methodology
 
@@ -389,7 +389,7 @@ claim_severity_adjusted = claim_severity * (1 + inflation_rate) ** year
 
 ---
 
-## ⚡ Stress Testing Results & Code
+## Stress Testing Results & Code
 
 ### Stress Test Methodology
 
@@ -445,7 +445,7 @@ flare_vir99_increase = (47_837_551 - 21_261_136) / 21_261_136  # +124%
 
 ---
 
-## 🌍 Correlated Risk Scenarios & Copula Analysis
+## Correlated Risk Scenarios & Copula Analysis
 
 ### Gaussian Copula Modeling
 
@@ -486,7 +486,7 @@ for(rho in rho_values) {
 
 ---
 
-## 🎯 Risk Assessment & System-Specific Profiles
+## Risk Assessment & System-Specific Profiles
 
 ### Helionis Cluster
 **Profile**: High-Traffic Frequency Hub
@@ -511,7 +511,7 @@ for(rho in rho_values) {
 
 ---
 
-## 📋 Scenario Testing (3-Year & 10-Year Horizons)
+## Scenario Testing (3-Year & 10-Year Horizons)
 
 | Scenario | Annual Technical Premium | 3-Year Expected Cost | 3-Year Net Revenue | 10-Year 99% VaR (Costs) |
 |----------|---------------------------|----------------------|-------------------|-------------------------|
@@ -521,7 +521,7 @@ for(rho in rho_values) {
 
 ---
 
-## 🧠 Methodological Innovations
+## Methodological Innovations
 
 ### 1. Proxy Calibration for System Risk
 Mapped historical claims from Epsilon & Zeta to target systems (Helionis, Bayesia, Oryn Delta) using:
@@ -549,19 +549,18 @@ Monte Carlo simulations run 10,000 times per line to ensure:
 
 ---
 
-## 🚀 Key Deliverables
-
-✅ **Four Pricing Models**: Frequency & severity GLMs fully specified with rating factors  
-✅ **Monte Carlo Framework**: 10,000 iterations per line generating stable tail estimates  
-✅ **Stress Testing Suite**: 30+ scenarios covering frequency, severity, operational, workforce, and systemic risks  
-✅ **Copula Modeling**: Dependency structure & correlated catastrophe assessment  
-✅ **10-Year Financial Projections**: Present value of premiums, losses, expenses, reserves, and profit  
-✅ **Capital Adequacy Assessment**: 99% TVaR-based reserves ensuring 1-in-200-year solvency  
-✅ **System-Specific Guidance**: Tailored deductibles, endorsements, and risk loadings by solar system  
+## Key Deliverables
+**Four Pricing Models**: Frequency & severity GLMs fully specified with rating factors  
+**Monte Carlo Framework**: 10,000 iterations per line generating stable tail estimates  
+**Stress Testing Suite**: 30+ scenarios covering frequency, severity, operational, workforce, and systemic risks  
+**Copula Modeling**: Dependency structure & correlated catastrophe assessment  
+**10-Year Financial Projections**: Present value of premiums, losses, expenses, reserves, and profit  
+**Capital Adequacy Assessment**: 99% TVaR-based reserves ensuring 1-in-200-year solvency  
+**System-Specific Guidance**: Tailored deductibles, endorsements, and risk loadings by solar system  
 
 ---
 
-## 📚 Assumptions & Documentation
+## Assumptions & Documentation
 
 ### Core Assumptions
 - **Frequency-Severity Independence**: Limited evidence of dependence within hazard lines; modeled via copula where applicable
@@ -578,40 +577,8 @@ Monte Carlo simulations run 10,000 times per line to ensure:
 
 ---
 
----
 
-## 📈 Visualizations & Graphics
-
-### Recommended Visualizations from EDA, Pricing, & Stress Testing
-
-The following visualizations provide critical insights into model behavior and risk dynamics. If available in your project folders, include them in this README:
-
-**Exploratory Data Analysis Visualizations**:
-- 📊 **Claim Frequency by Route Risk Tier** (Cargo Loss) — Near-monotonic increase in frequency tiers 1→5
-- 📊 **Debris Density vs Claim Rate** (Cargo Loss) — Highest-density band generates 2x baseline frequency
-- 📊 **Exposure-Adjusted Claim Rates by System** (Business Interruption) — Inverse relationship: low exposure → high frequency
-- 📊 **Claim Severity Distribution** (Workers' Compensation) — Heavy right tail; maximum Đ193,357
-- 📊 **Equipment Age vs Claim Frequency & Severity** (Equipment Failure) — Frequency rises with age; severity stable
-
-**Pricing & Capital Modeling**:
-- 💰 **Aggregate Loss Distributions** (All Four Hazards) — Monte Carlo simulation results (100,000 iterations)
-- 💰 **Tail Risk Comparison** — 99% VaR and 99.5% TVaR across all hazard lines
-- 💰 **10-Year Cash Flow Projections** — Premium, loss, expense, and profit trajectories
-
-**Stress Testing Visualizations**:
-- ⚡ **VaR Amplification Under Stress** — Baseline vs Moderate (+25% freq, +10% sev) vs Extreme (+50% freq, +30% sev)
-- ⚡ **Cargo Loss Great Flare Scenario** — 124% amplification in 99% VaR
-- ⚡ **Sensitivity Lines** (All Hazards) — Risk driver sensitivities showing steepest gradients
-- ⚡ **Correlated vs Independent Scenarios** — Gaussian copula at various correlation levels (ρ = -0.5 to +0.5)
-
-**Risk Assessment**:
-- 🎯 **System-Specific Risk Profiles** — Heat maps or radar charts comparing Helionis, Bayesia, Oryn Delta
-- 🎯 **Threat Matrix** — Likelihood vs Impact for top 8 threats across all hazards
-- 🎯 **Correlated Risk Heatmap** — Cross-hazard dependency structure under different correlation assumptions
-
----
-
-## 🔗 Appendices & References
+## Appendices & References
 
 All detailed analyses, visualizations, and supplementary calculations documented in:
 - **Appendix A**: Full rating factor structures (GLM formulas, deductible schedules)
@@ -632,59 +599,9 @@ All detailed analyses, visualizations, and supplementary calculations documented
 
 ---
 
-## 📞 About This Report
+## Full Report
 
-**Project**: 2026 SOA Student Research Case Study Challenge  
-**Organization**: Galaxy General Insurance Company & Cosmic Quarry Mining Corporation  
-**Scope**: Insurance pricing for interstellar mining operations across three solar systems  
-**Analysis Horizon**: 10-year financial projections with stress testing to 1-in-200-year events  
-
-**Key Insights**:
-- Cargo Loss dominates portfolio tail risk (84% of capital reserves)
-- Great Flare correlated catastrophe requires Đ530M additional capital buffer
-- System-specific risk profiles justify differentiated pricing and coverage terms
-- ESG integration (safety training, debris mitigation) provides premium relief opportunity
-
----
-
-## 🎓 Technical Highlights
-
-- **Advanced Actuarial Methods**: Collective risk models, GLM-based pricing, Monte Carlo simulation
-- **Statistical Rigor**: Copula dependency testing, overdispersion accommodation, tail risk quantification
-- **Risk Management Framework**: 99% TVaR capital adequacy, stress testing across 30+ scenarios, correlated catastrophe modeling
-- **Professional Documentation**: Transparent assumptions, comprehensive appendices, reproducible methodology
-
----
-
-<div align="center">
-
-### 🌟 Built with Actuarial Excellence
-
-_Comprehensive pricing strategy for the final frontier_
-
-**Prepared for**: Galaxy General Insurance Company  
-**Data Sources**: Cosmic Quarry operational & claims data (2026)  
-**Analysis Date**: April 2026
-
-</div>
-
----
-
-## 📖 How to Use This Documentation
-
-1. **Executive Overview** → Start here for 5-minute summary
-2. **Methodology Section** → Understand data sources & modeling approach
-3. **Aggregate Loss Results** → Review baseline statistics & capital needs
-4. **Stress Testing** → Examine sensitivities to key risk drivers
-5. **Full Appendices** → Detailed technical specifications in KADAK_Report.docx
-
----
-
----
-
-## 📄 Full Report
-
-**[📥 Download the Complete KADAK Report (PDF)](KADAK_Report.pdf)**
+**[ Download the Complete KADAK Report (PDF)](KADAK_Report.pdf)**
 
 The full technical report includes all appendices, detailed analyses, visualizations, and supplementary calculations referenced throughout this documentation.
 
