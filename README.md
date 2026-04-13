@@ -283,7 +283,7 @@ For each hazard line, multiple distributions were evaluated based on:
 
 ---
 
-All analysis uses **five provided project datasets**:
+All analysis uses the following datasets:
 
 1. **[Cargo Claims Data](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-claims-cargo.xlsx)** — Cargo Loss frequency & severity
    - 85,332 frequency records (post-exclusion of gold/platinum)
@@ -309,8 +309,6 @@ All analysis uses **five provided project datasets**:
    - Equipment inventory: ~505 units across three systems (exposure base for EF frequency model)
    - Personnel headcount: ~86,765 workers across three systems (exposure base for WC frequency model)
    - System-level operational metrics (production_load, supply_chain_index, etc.)
-
-### Economic & Environmental Data
 
 6. **[Interest and Inflation Rates](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-interest-and-inflation.xlsx)** — Macroeconomic Assumptions
    - Historical inflation rates, overnight bank lending rates, 1-year and 10-year risk-free spot rates
