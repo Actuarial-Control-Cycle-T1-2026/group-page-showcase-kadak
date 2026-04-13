@@ -216,6 +216,23 @@ Exploratory Data Analysis (EDA) was conducted prior to modelling to identify the
 Aggregate losses for each portfolio were estimated using Monte Carlo simulation based on calibrated frequency and severity models. The results above show that Business Interruption is a major exposure with significant tail risk, while Workers’ Compensation, despite lower expected losses, is vulnerable to occasional high-severity claims. Equipment Failure and Cargo Loss exhibit higher expected losses overall and remain exposed to adverse tail outcomes, highlighting the importance of managing extreme risk across all lines.
 
 ---
+---
+
+## Libraries & Technical Stack
+### R Libraries (Capital Modeling, Risk Metrics)
+
+```r
+library(readxl)          # Excel file reading
+library(ggplot2)         # Data visualization
+library(copula)          # Copula models for dependency
+library(tidyr)           # Data reshaping
+library(dplyr)           # Data manipulation
+library(fable)           # Forecasting
+library(forecast)        # Time series forecasting
+library(tsibble)         # Time series tibbles
+```
+
+---
 
 ## Model Selection & Goodness-of-Fit
 
@@ -414,14 +431,14 @@ for scenario_name, multipliers in stress_scenarios.items():
 # Frequency +50%, Severity +50% simultaneously
 
 cargo_stress_results = {
-    'Baseline': {'mean': 1_978_730, 'var99': 13_684_390, 'tvar99': 21_261_136},
-    'Frequency +50%': {'mean': 2_968_095, 'var99': 20_526_585, 'tvar99': 31_891_704},
-    'Severity +50%': {'mean': 2_968_095, 'var99': 20_526_585, 'tvar99': 31_891_704},
-    'Combined +50%': {'mean': 4_457_142, 'var99': 30_789_878, 'tvar99': 47_837_551}
+    'Baseline': {'mean': 1,978,730, 'var99': 13,684,390, 'tvar99': 21,261,136},
+    'Frequency +50%': {'mean': 2,968,095, 'var99': 20,526,585, 'tvar99': 31,891,704},
+    'Severity +50%': {'mean': 2,968,095, 'var99': 20,526,585, 'tvar99': 31,891,704},
+    'Combined +50%': {'mean': 4,457,142, 'var99': 30,789,878, 'tvar99': 47,837,551}
 }
 
 # Great Flare produces 124% increase in tail risk
-flare_vir99_increase = (47_837_551 - 21_261_136) / 21_261_136  # +124%
+flare_vir99_increase = (47,837,551 - 21,261,136) / 21,261,136  # +124%
 ```
 
 ---
