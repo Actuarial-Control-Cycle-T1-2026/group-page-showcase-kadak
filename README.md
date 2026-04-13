@@ -5,7 +5,7 @@
 
 ---
 
-## Executive Overview
+## Executive Summary
 
 Interstellar mining presents significant economic opportunities but also exposes operators to extreme and unpredictable risks. Cosmic Quarry Mining operates across the Helionis Cluster, Bayesia System, and Oryn Delta, where hazards such as orbital debris, radiation surges, equipment strain and workforce safety challenges can disrupt operations and cause substantial financial losses.
 
