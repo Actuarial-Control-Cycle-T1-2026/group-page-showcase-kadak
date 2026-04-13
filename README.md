@@ -166,7 +166,7 @@ var995_cargo <- quantile(cargo_loss, 0.995)
 
 Exploratory Data Analysis (EDA) was conducted prior to modelling to identify the most significant risk drivers across each line of business and guide model development. The key findings are summarised below:
 
-- Cargo Loss: Claim frequency increases with route risk (tiers 1→5) and debris density, with the highest density band generating around 2× baseline frequency; solar radiation has a secondary effect (~40% uplift). Lithium and cobalt drive severity when excluding gold and platinum.
+- Cargo Loss: Claim frequency increases with route risk (tiers 1→5) and debris density, with the highest density band generating around 2× baseline frequency; solar radiation has a secondary effect (approximately 40% uplift). Lithium and cobalt drive severity when excluding gold and platinum.
 
 - Business Interruption: Claim rates decline as exposure increases, while solar system location is a key differentiator (Epsilon > Zeta > Helionis Cluster). Maintenance frequency shows limited impact on total claims.
 
@@ -180,7 +180,7 @@ Exploratory Data Analysis (EDA) was conducted prior to modelling to identify the
 **Cargo Loss**: 
 - Route risk shows near-monotonic increase in claim frequency (tiers 1→5)
 - Debris density bands (0.0–1.0) demonstrate similar gradient, with highest-density band generating 2x baseline frequency
-- Solar radiation shows secondary effect (~40% uplift for high bands)
+- Solar radiation shows secondary effect (approx. 40% uplift for high bands)
 - Gold and platinum excluded; lithium and cobalt carry highest severity loading
 
 **Business Interruption**:
@@ -214,24 +214,6 @@ Exploratory Data Analysis (EDA) was conducted prior to modelling to identify the
 | **Portfolio Total** | **Đ17.70 billion** | — | **Đ25.9B** (1-in-200) | **Đ27.8B** (1-in-200) |
 
 Aggregate losses for each portfolio were estimated using Monte Carlo simulation based on calibrated frequency and severity models. The results above show that Business Interruption is a major exposure with significant tail risk, while Workers’ Compensation, despite lower expected losses, is vulnerable to occasional high-severity claims. Equipment Failure and Cargo Loss exhibit higher expected losses overall and remain exposed to adverse tail outcomes, highlighting the importance of managing extreme risk across all lines.
-
----
-
----
-
-## Libraries & Technical Stack
-### R Libraries (Capital Modeling, Risk Metrics)
-
-```r
-library(readxl)          # Excel file reading
-library(ggplot2)         # Data visualization
-library(copula)          # Copula models for dependency
-library(tidyr)           # Data reshaping
-library(dplyr)           # Data manipulation
-library(fable)           # Forecasting
-library(forecast)        # Time series forecasting
-library(tsibble)         # Time series tibbles
-```
 
 ---
 
@@ -306,8 +288,8 @@ All analysis uses the following datasets:
    - Claim counts & amounts by system and equipment class
 
 5. **[Cosmic Quarry Inventory Data](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-cosmic-quarry-inventory.xlsx)** — Exposure Bases
-   - Equipment inventory: ~505 units across three systems (exposure base for EF frequency model)
-   - Personnel headcount: ~86,765 workers across three systems (exposure base for WC frequency model)
+   - Equipment inventory: approx. 505 units across three systems (exposure base for EF frequency model)
+   - Personnel headcount: approx. 86,765 workers across three systems (exposure base for WC frequency model)
    - System-level operational metrics (production_load, supply_chain_index, etc.)
 
 6. **[Interest and Inflation Rates](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-interest-and-inflation.xlsx)** — Macroeconomic Assumptions
