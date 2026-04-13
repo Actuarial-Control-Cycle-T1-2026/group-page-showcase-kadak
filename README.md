@@ -7,13 +7,16 @@
 
 ## Executive Overview
 
-This project develops a comprehensive insurance pricing strategy for **Galaxy General Insurance Company** to cover the operational risks of **Cosmic Quarry Mining Corporation** across three solar systems: **Helionis Cluster**, **Bayesia System**, and **Oryn Delta**. Four primary insurance products address material exposures: Business Interruption (BI), Cargo Loss (CL), Workers' Compensation (WC), and Equipment Failure (EF).
+Interstellar mining presents significant economic opportunities but also exposes operators to extreme and unpredictable risks. Cosmic Quarry Mining operates across the Helionis Cluster, Bayesia System, and Oryn Delta, where hazards such as orbital debris, radiation surges, equipment strain and workforce safety challenges can disrupt operations and cause substantial financial losses.
 
-The analysis synthesizes advanced actuarial modeling, statistical estimation, and enterprise risk management frameworks to deliver robust pricing, capital adequacy assessment, and tail risk quantification for extreme but rare events.
+This project outlines how Galaxy General Insurance can enhance financial resilience through four core products: Business Interruption, Equipment Failure, Cargo Loss and Workers’ Compensation. These products collectively address key risks including downtime, infrastructure damage, transport losses and employee injuries.
+
+The insurance solutions are designed to be modular and adaptable, with coverage tailored to system-specific risk profiles. Pricing, limits and deductibles adjust based on operational and environmental factors, while optional features (e.g., precious metal cargo riders) help manage concentration risk. ESG-linked incentives further support sustainable and effective risk management.
 
 ---
 
 ## Products Developed
+Galaxy General's product design is scoped to the three solar systems previously mentioned in which Cosmic Quarry Mining Corporation operates. While the historical claims dataset spans five systems including Epsilon and Zeta, those systems are used only for model calibration and are not subject to coverage under this contract.
 
 ### Coverage Areas & Key Parameters
 
@@ -129,7 +132,7 @@ freq_glm = smf.glm(
 
 ### Monte Carlo Simulation Framework
 
-**100,000 Monte Carlo iterations** per line of business generate stable tail risk estimates through the collective risk model:
+Monte Carlo simulation was conducted to estimate potential losses and capture extreme tail risks that cannot be assessed using simple averages or deterministic methods. By running 100,000 iterations for each line of business, the model generates a wide range of possible outcomes using a collective risk framework; claim frequencies are simulated from fitted distributions (Poisson or Negative Binomial) and claim severities are drawn from appropriate distributions (Gamma, Lognormal, or Beta). These are combined to produce aggregate annual losses, from which key risk metrics such as Value-at-Risk (VaR) and Tail Value-at-Risk (TVaR) at the 95th, 99th and 99.5th percentiles are calculated. An annual inflation adjustment of 2.46% is applied to ensure loss estimates remain realistic over time.
 
 ```r
 # Collective Risk Model: S = Σ Xi (i = 1 to N)
@@ -157,21 +160,20 @@ var95_cargo  <- quantile(cargo_loss, 0.95)
 var99_cargo  <- quantile(cargo_loss, 0.99)
 var995_cargo <- quantile(cargo_loss, 0.995)
 ```
-
-**Process**:
-1. Claim counts drawn from fitted frequency distribution (Poisson or Negative Binomial)
-2. Individual claim severities sampled from fitted severity distribution (Gamma, Lognormal, or Beta)
-3. Aggregate annual loss computed via collective risk formula: **S = Σ Xi** (i = 1 to N)
-4. 95th, 99th, and 99.5th percentiles extracted for Value-at-Risk (VaR) and Tail Value-at-Risk (TVaR)
-5. Inflation adjustment applied at 2.46% per annum to claim severities
-
 ---
 
 ### Exploratory Data Analysis (EDA)
 
-Before model fitting, comprehensive EDA was conducted to identify key risk drivers:
+Exploratory Data Analysis (EDA) was conducted prior to modelling to identify the most significant risk drivers across each line of business and guide model development. The key findings are summarised below:
 
-![Actuarial Control Cycle](/Stress%20Testing/Equipment%20Failure/stress_test.png)
+- Cargo Loss: Claim frequency increases with route risk (tiers 1→5) and debris density, with the highest density band generating around 2× baseline frequency; solar radiation has a secondary effect (~40% uplift). Lithium and cobalt drive severity when excluding gold and platinum.
+
+- Business Interruption: Claim rates decline as exposure increases, while solar system location is a key differentiator (Epsilon > Zeta > Helionis Cluster). Maintenance frequency shows limited impact on total claims.
+
+- Workers’ Compensation: Drill operators have the highest claim frequency and severity. Claim amounts are heavily right-skewed, with more stress-related injuries observed in the Epsilon system and relatively higher rates in Helionis Cluster after adjusting for exposure.
+
+- Equipment Failure: Claim frequency rises with equipment age before plateauing, while severity remains stable. Usage intensity significantly increases both frequency and severity, with certain equipment types consistently generating higher losses.
+
 
 **EDA Key Findings**:
 
@@ -200,9 +202,8 @@ Before model fitting, comprehensive EDA was conducted to identify key risk drive
 
 ---
 
-## 📈 Aggregate Loss Results (Baseline)
+## Aggregate Loss Results (Baseline)
 
-Monte Carlo-derived summary statistics across all four hazard lines:
 
 | Line of Business | Expected Annual Loss | Std Dev | 99% VaR | 99% TVaR |
 |------------------|----------------------|---------|---------|----------|
@@ -211,6 +212,8 @@ Monte Carlo-derived summary statistics across all four hazard lines:
 | Workers' Compensation | Đ14.9 million | Đ465K | Đ16.10M | Đ16.28M |
 | Equipment Failure | Đ234.04 million | Đ5.13M | Đ246M | Đ248.13M |
 | **Portfolio Total** | **Đ17.70 billion** | — | **Đ25.9B** (1-in-200) | **Đ27.8B** (1-in-200) |
+
+Aggregate losses for each portfolio were estimated using Monte Carlo simulation based on calibrated frequency and severity models. The results above show that Business Interruption is a major exposure with significant tail risk, while Workers’ Compensation, despite lower expected losses, is vulnerable to occasional high-severity claims. Equipment Failure and Cargo Loss exhibit higher expected losses overall and remain exposed to adverse tail outcomes, highlighting the importance of managing extreme risk across all lines.
 
 ---
 
@@ -247,13 +250,13 @@ For each hazard line, multiple distributions were evaluated based on:
 
 | Hazard | Model Tested | Dispersion | Decision | Rationale |
 |--------|--------------|-----------|----------|-----------|
-| **Cargo Loss** | Poisson | 4.51 | ❌ Rejected | High overdispersion; counts clustered at extremes |
-| **Cargo Loss** | Negative Binomial | 4.51 | ✅ Adopted | Accommodates overdispersion; best AIC/BIC |
-| **Equipment Failure** | Poisson | 1.0956 | ✅ Adopted | Dispersion ≈ 1; simpler model preferred |
-| **Equipment Failure** | Negative Binomial | 1.0956 | ❌ Rejected | Poisson sufficient; no efficiency gain |
-| **Workers' Comp** | Poisson | 0.115 | ✅ Adopted | Minimal underdispersion; Poisson suitable |
-| **Business Interruption** | Poisson | 1.73 | ❌ Rejected | Overdispersion present; Neg Binom better |
-| **Business Interruption** | Negative Binomial | 1.73 | ✅ Adopted | Accommodates clustering; best AIC |
+| **Cargo Loss** | Poisson | 4.51 | **Rejected** | High overdispersion; counts clustered at extremes |
+| **Cargo Loss** | Negative Binomial | 4.51 | Adopted | Accommodates overdispersion; best AIC/BIC |
+| **Equipment Failure** | Poisson | 1.0956 | Adopted | Dispersion ≈ 1; simpler model preferred |
+| **Equipment Failure** | Negative Binomial | 1.0956 | **Rejected** | Poisson sufficient; no efficiency gain |
+| **Workers' Comp** | Poisson | 0.115 | Adopted | Minimal underdispersion; Poisson suitable |
+| **Business Interruption** | Poisson | 1.73 | **Rejected** | Overdispersion present; Neg Binom better |
+| **Business Interruption** | Negative Binomial | 1.73 | Adopted | Accommodates clustering; best AIC |
 
 ### Severity Model Selection
 
@@ -282,34 +285,34 @@ For each hazard line, multiple distributions were evaluated based on:
 
 All analysis uses **five provided project datasets**:
 
-1. **srcsc-2026-claims-cargo.xlsx** — Cargo Loss frequency & severity
+1. **[Cargo Claims Data](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-claims-cargo.xlsx)** — Cargo Loss frequency & severity
    - 85,332 frequency records (post-exclusion of gold/platinum)
    - 18,673 severity records (4.6:1 ratio creates subsample bias; mitigated via GLM anchor calibration)
    - Variables: route_risk, debris_density, solar_radiation, cargo_type, cargo_value, weight, transit_duration, pilot_experience, container_type, vessel_age, distance
 
-2. **srcsc-2026-claims-business-interruption.xlsx** — BI frequency & severity
+2. **[Business Interruption Claims Data](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-claims-business-interruption.xlsx)** — BI frequency & severity
    - Frequency data: solar_system, production_load, energy_backup_score, supply_chain_index, avg_crew_exp, maintenance_freq, safety_compliance
    - Severity data: claim amounts (in Đ millions)
    - Exposure metric for offset modeling
 
-3. **srcsc-2026-claims-workers-comp.xlsx** — Workers' Compensation frequency & severity
+3. **[Workers' Compensation Calims Data](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-claims-workers-comp.xlsx)** — Workers' Compensation frequency & severity
    - Frequency: occupation, accident_history_flag, psych_stress_index, safety_training_index, solar_system
    - Severity: wage-replacement basis, claim_length (duration in days), employment_type, supervision_level, protective_gear_quality
    - Claims range: Đ120.76 (minimum) to Đ193,357.20 (maximum per occurrence)
 
-4. **srcsc-2026-claims-equipment-failure.xlsx** — Equipment Failure frequency & severity
+4. **[Equipment Failure Claims Data](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-claims-equipment-failure.xlsx)** — Equipment Failure frequency & severity
    - Frequency: equipment_type (Quantum Bore, Mag-Lift Aggregator, FluxStream Carrier, Fusion Transport, Ion Pulverizer, Graviton Extractor)
    - Severity: equipment_age (0–10 years), maintenance_int (100–5,000 hours), usage_int (0–24 hours/day)
    - Claim counts & amounts by system and equipment class
 
-5. **Cosmic Quarry Inventory Data** — Exposure Bases
+5. **[Cosmic Quarry Inventory Data](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-cosmic-quarry-inventory.xlsx)** — Exposure Bases
    - Equipment inventory: ~505 units across three systems (exposure base for EF frequency model)
    - Personnel headcount: ~86,765 workers across three systems (exposure base for WC frequency model)
    - System-level operational metrics (production_load, supply_chain_index, etc.)
 
 ### Economic & Environmental Data
 
-6. **srcsc-2026-interest-and-inflation.xlsx** — Macroeconomic Assumptions
+6. **[Interest and Inflation Rates](https://www.soa.org/globalassets/assets/files/research/opportunities/2026/student-research-case-study/srcsc-2026-interest-and-inflation.xlsx)** — Macroeconomic Assumptions
    - Historical inflation rates, overnight bank lending rates, 1-year and 10-year risk-free spot rates
    - ARIMA forecasts for 10-year projection horizon
    - Inflation rate (baseline): 4.23% per annum
@@ -322,24 +325,20 @@ All analysis uses **five provided project datasets**:
 
 ### GLM Specification
 
-**Offset Usage**: Exposure period included as offset in frequency models to allow claim counts to scale proportionally with operational exposure (time or unit volume)
+Generalised Linear Models (GLMs) were used to model both claim frequency and severity across all lines of business, with specifications chosen to reflect the underlying risk characteristics observed in the data. An exposure offset was incorporated into all frequency models to ensure that claim counts scale appropriately with the level of operational activity (e.g. time in operation or production volume). This allows for consistent comparison across systems with differing exposure levels.
 
-**Frequency Distribution Choices**:
-- **Negative Binomial for BI, WC, CL**: Accommodates overdispersion (variance > mean) observed in claim counts, particularly for systems with sporadic high-frequency events
-- **Poisson for EF**: Lower overdispersion in equipment failure counts justifies simpler Poisson structure
+For claim frequency, distributional assumptions were selected based on dispersion properties. Negative Binomial models were applied to Business Interruption, Workers’ Compensation, and Cargo Loss, as these portfolios exhibited overdispersion driven by occasional high-frequency events. In contrast, Equipment Failure was modelled using a Poisson distribution, as its claim counts showed relatively stable variance and did not require the additional flexibility of a Negative Binomial structure.
 
-**Severity Distribution Choices**:
-- **Gamma for CL & EF**: Accommodates right-skewed, heavy-tailed claim amounts with operational rating factors (cargo_value, weight, usage_intensity)
-- **Lognormal for BI & WC**: Reflects multiplicative nature of operational disruption costs and wage-replacement expenses
+For claim severity, distributions were chosen to capture the right-skewed and heavy-tailed nature of losses. Gamma distributions were used for Cargo Loss and Equipment Failure, where claim sizes are strongly influenced by operational factors such as cargo value, weight, and usage intensity. Lognormal distributions were selected for Business Interruption and Workers’ Compensation, reflecting the multiplicative nature of disruption costs and wage-related claims, which tend to produce more extreme high-end outcomes.
 
 ### Data Limitations & Mitigations
 
 | Limitation | Impact | Mitigation |
 |-----------|--------|-----------|
-| Gold/platinum exclusion reduces CL severity data to 18,673 of 85,332 frequency observations | Severity model trained on non-random subsample; potential underweighting of low-value claims | GLM anchor calibration ties severity scale to mean(claim_amount)/sev_shape; sensitivity tested in Appendix D.2 |
+| Gold/platinum exclusion reduces CL severity data to 18,673 of 85,332 frequency observations | Severity model trained on non-random subsample; potential underweighting of low-value claims | GLM anchor calibration ties severity scale to mean(claim_amount)/sev_shape |
 | No explicit multi-system claim tagging in cargo data | System-specific pricing relies on route_risk, debris_density, solar_radiation as proxies rather than direct system identifiers | Route_risk tiers (1–5) calibrated to three systems via encyclopedia; Oryn Delta's tail risk stress-tested separately |
 | Historical data spans Epsilon & Zeta systems (not in RFP scope) | Frequency intercepts potentially diluted by external systems' operating conditions | Conservatively accepted; if Epsilon/Zeta have lower risk, estimates are conservative bias |
-| Cross-sectional data lacks time dimension | Cannot model claims trend, development, or latent demand surge | Inflation loading stress-tested up to 40% separately (Appendix D); claims inflation driver included in stress scenarios |
+| Cross-sectional data lacks time dimension | Cannot model claims trend, development, or latent demand surge | Inflation loading stress-tested up to 40% separately; claims inflation driver included in stress scenarios |
 | Some data dictionary parameter bounds too restrictive | Would remove excessive valid observations during cleaning | Modified to use lower bounds only (e.g., Workers' Compensation) with documented justification |
 
 ---
@@ -417,6 +416,8 @@ for scenario_name, multipliers in stress_scenarios.items():
 
 ### Stress Testing Results Summary
 
+![Actuarial Control Cycle](/Stress%20Testing/Equipment%20Failure/stress_test.png)
+
 | Product | Baseline VaR 99% | Moderate Stress (+25% freq, +10% sev) | Extreme Stress (+50% freq, +30% sev) | Change |
 |---------|-----------------|----------------------------------------|---------------------------------------|--------|
 | Equipment Failure | $102,773 | $129,148 | $157,252 | +53% |
@@ -449,7 +450,9 @@ flare_vir99_increase = (47_837_551 - 21_261_136) / 21_261_136  # +124%
 
 ### Gaussian Copula Modeling
 
-To capture cross-hazard dependency from systemic shocks (e.g., solar storms affecting all four hazard lines simultaneously):
+A Gaussian copula framework is implemented to capture dependency between hazard lines arising from systemic shocks (e.g. solar storms impacting multiple portfolios simultaneously). This approach allows the marginal frequency–severity models for each line of business to be combined into a joint distribution, preserving their individual characteristics while introducing realistic cross-line correlations.
+
+By modelling these dependencies, the framework provides more accurate aggregate loss estimates and improves the assessment of portfolio-level tail risk, particularly under extreme but plausible scenarios where multiple hazard exposures are affected at the same time.
 
 ```r
 # Gaussian Copula: Dependency Structure Testing
