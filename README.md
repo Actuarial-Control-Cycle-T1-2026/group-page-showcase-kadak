@@ -162,6 +162,42 @@ var995_cargo <- quantile(cargo_loss, 0.995)
 ```
 ---
 
+## Model Selection & Goodness-of-Fit
+
+### Model Comparison Framework
+
+For each hazard line, multiple distributions were evaluated based on:
+
+1. **AIC / BIC**: Akaike and Bayesian Information Criteria (lower is better)
+2. **Adjusted R²**: Explanatory power of covariates
+3. **Pearson Dispersion / Pearson Chi-Square**: Goodness-of-fit
+4. **Visual Inspection**: Quantile-quantile plots, residual plots
+
+### Frequency Model Selection
+
+| Hazard | Model Tested | Dispersion | Decision | Rationale |
+|--------|--------------|-----------|----------|-----------|
+| **Cargo Loss** | Poisson | 4.51 | **Rejected** | High overdispersion; counts clustered at extremes |
+| **Cargo Loss** | Negative Binomial | 4.51 | Adopted | Accommodates overdispersion; best AIC/BIC |
+| **Equipment Failure** | Poisson | 1.0956 | Adopted | Dispersion ≈ 1; simpler model preferred |
+| **Equipment Failure** | Negative Binomial | 1.0956 | **Rejected** | Poisson sufficient; no efficiency gain |
+| **Workers' Comp** | Poisson | 0.115 | Adopted | Minimal underdispersion; Poisson suitable |
+| **Business Interruption** | Poisson | 1.73 | **Rejected** | Overdispersion present; Neg Binom better |
+| **Business Interruption** | Negative Binomial | 1.73 | Adopted | Accommodates clustering; best AIC |
+
+### Severity Model Selection
+
+| Hazard | Approach | Distribution | Parameters | Rationale |
+|--------|----------|--------------|-----------|-----------|
+| **Cargo Loss** | Severity Ratio | Beta GLM | α=1.3832, β=14.3850 | Claim < cargo_value; Beta on (0,1); then rescale |
+| **Equipment Failure** | Direct | Gamma GLM (log-link) | shape=4.32, scale=11.1K | Right-skewed; multiplicative covariates |
+| **Workers' Comp** | Log-transformed | Lognormal OLS | μ=7.1982, σ=1.0786 | Heavy right tail; fat tails accommodated |
+| **Business Interruption** | Direct | Gamma GLM (log-link) | shape=0.3538, scale=12.3M | Right-skewed; operational factors multiplicative |
+
+**Key Finding**: Negative Binomial for frequency outperformed Poisson in 2 of 4 lines due to overdispersion. Gamma and Lognormal severity models captured tail behavior better than exponential alternatives.
+
+---
+
 ### Exploratory Data Analysis (EDA)
 
 Exploratory Data Analysis (EDA) was conducted prior to modelling to identify the most significant risk drivers across each line of business and guide model development. The key findings are summarised below:
@@ -234,41 +270,7 @@ library(tsibble)         # Time series tibbles
 
 ---
 
-## Model Selection & Goodness-of-Fit
 
-### Model Comparison Framework
-
-For each hazard line, multiple distributions were evaluated based on:
-
-1. **AIC / BIC**: Akaike and Bayesian Information Criteria (lower is better)
-2. **Adjusted R²**: Explanatory power of covariates
-3. **Pearson Dispersion / Pearson Chi-Square**: Goodness-of-fit
-4. **Visual Inspection**: Quantile-quantile plots, residual plots
-
-### Frequency Model Selection
-
-| Hazard | Model Tested | Dispersion | Decision | Rationale |
-|--------|--------------|-----------|----------|-----------|
-| **Cargo Loss** | Poisson | 4.51 | **Rejected** | High overdispersion; counts clustered at extremes |
-| **Cargo Loss** | Negative Binomial | 4.51 | Adopted | Accommodates overdispersion; best AIC/BIC |
-| **Equipment Failure** | Poisson | 1.0956 | Adopted | Dispersion ≈ 1; simpler model preferred |
-| **Equipment Failure** | Negative Binomial | 1.0956 | **Rejected** | Poisson sufficient; no efficiency gain |
-| **Workers' Comp** | Poisson | 0.115 | Adopted | Minimal underdispersion; Poisson suitable |
-| **Business Interruption** | Poisson | 1.73 | **Rejected** | Overdispersion present; Neg Binom better |
-| **Business Interruption** | Negative Binomial | 1.73 | Adopted | Accommodates clustering; best AIC |
-
-### Severity Model Selection
-
-| Hazard | Approach | Distribution | Parameters | Rationale |
-|--------|----------|--------------|-----------|-----------|
-| **Cargo Loss** | Severity Ratio | Beta GLM | α=1.3832, β=14.3850 | Claim < cargo_value; Beta on (0,1); then rescale |
-| **Equipment Failure** | Direct | Gamma GLM (log-link) | shape=4.32, scale=11.1K | Right-skewed; multiplicative covariates |
-| **Workers' Comp** | Log-transformed | Lognormal OLS | μ=7.1982, σ=1.0786 | Heavy right tail; fat tails accommodated |
-| **Business Interruption** | Direct | Gamma GLM (log-link) | shape=0.3538, scale=12.3M | Right-skewed; operational factors multiplicative |
-
-**Key Finding**: Negative Binomial for frequency outperformed Poisson in 2 of 4 lines due to overdispersion. Gamma and Lognormal severity models captured tail behavior better than exponential alternatives.
-
----
 
 ## Data Limitations & Mitigation Strategies
 
