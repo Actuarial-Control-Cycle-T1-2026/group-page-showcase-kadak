@@ -551,17 +551,6 @@ Monte Carlo simulations run 10,000 times per line to ensure:
 
 ---
 
-## Key Deliverables
-**Four Pricing Models**: Frequency & severity GLMs fully specified with rating factors  
-**Monte Carlo Framework**: 10,000 iterations per line generating stable tail estimates  
-**Stress Testing Suite**: 30+ scenarios covering frequency, severity, operational, workforce, and systemic risks  
-**Copula Modeling**: Dependency structure & correlated catastrophe assessment  
-**10-Year Financial Projections**: Present value of premiums, losses, expenses, reserves, and profit  
-**Capital Adequacy Assessment**: 99% TVaR-based reserves ensuring 1-in-200-year solvency  
-**System-Specific Guidance**: Tailored deductibles, endorsements, and risk loadings by solar system  
-
----
-
 ## Assumptions & Documentation
 
 ### Core Assumptions
